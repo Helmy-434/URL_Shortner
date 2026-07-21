@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('./server'); // Imports your express app
+const app = require('./app'); // Imports your express app
 
 const test = require('node:test');
 const assert = require('node:assert');
