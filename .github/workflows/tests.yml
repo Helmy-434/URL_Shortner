@@ -27,7 +27,7 @@ jobs:
           npm -v
           pwd
           ls -la
-          ls -la backend
+      
 
       - name: Install dependencies
         run: npm ci
