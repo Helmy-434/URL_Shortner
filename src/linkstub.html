@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Linkstub — URL Shortener</title>
+<style>
+  :root {
+    --bg: #14202b; --surface: #1d2e3a; --ticket: #f3eee2;
+    --ink: #1d2321; --accent: #e2a33b; --danger: #d9614f;
+    --text: #f3eee2; --text-dim: #8fa3ae; --border: #33495780;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
+  .wrap { max-width:620px; margin:0 auto; padding:48px 20px 80px; }
+  h1 { font-size:32px; margin:0 0 8px; }
+  .sub { color:var(--text-dim); font-size:14px; margin:0 0 28px; }
+  .config { display:flex; align-items:center; gap:10px; background:#24384780; border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:28px; }
+  .config input { flex:1; background:none; border:none; color:var(--text); font-family:var(--font-mono); font-size:13px; outline:none; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); }
+  .dot.online { background:#6fbf7a; } .dot.offline { background:var(--danger); }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .panel h2 { font-size:15px; margin:0 0 14px; }
+  .row { display:flex; gap:10px; }
+  input[type=text], input[type=url] { width:100%; background:#0e1922; border:1px solid var(--border); border-radius:8px; padding:12px 14px; color:var(--text); font-family:var(--font-mono); font-size:13px; outline:none; }
+  button { font-weight:600; font-size:13px; border:none; border-radius:8px; padding:12px 18px; cursor:pointer; }
+  .btn-primary { background:var(--accent); color:#1d1305; }
+  .btn-ghost { background:none; color:var(--text-dim); border:1px solid var(--border); }
+  .error-msg { font-family:var(--font-mono); font-size:12px; color:var(--danger); margin-top:10px; display:none; }
+  .ticket-slot { margin-top:18px; display:none; }
+  .ticket { background:var(--ticket); color:var(--ink); border-radius:10px; box-shadow:0 8px 0 #d8d1bf; overflow:hidden; }
+  .ticket-top { padding:18px 20px 14px; }
+  .ticket-label { font-family:var(--font-mono); font-size:10px; text-transform:uppercase; color:#55605c; }
+  .ticket-code { font-family:var(--font-mono); font-weight:700; font-size:20px; word-break:break-all; }
+  .ticket-original { font-family:var(--font-mono); font-size:11px; color:#55605c; margin-top:6px; word-break:break-all; }
+  .barcode { display:flex; align-items:flex-end; gap:2px; height:26px; padding:12px 20px 0; }
+  .barcode div { background:var(--ink); width:2px; }
+  .perforation { height:1px; background:repeating-linear-gradient(to right, #55605c 0 6px, transparent 6px 12px); opacity:.35; margin:0 16px; }
+  .ticket-bottom { padding:12px 20px 18px; display:flex; gap:8px; flex-wrap:wrap; }
+  .ticket-bottom button { font-family:var(--font-mono); font-size:11px; padding:8px 12px; }
+  .tk-copy { background:var(--ink); color:var(--ticket); }
+  .tk-visit { background:#e2a33b33; color:#8a5c14; }
+  .tk-stats { background:#1d232108; color:var(--ink); border:1px solid #1d232133; }
+  .tk-delete { background:#d9614f26; color:#a13c2e; }
+  .stats-box { margin-top:14px; display:none; font-family:var(--font-mono); font-size:12px; color:var(--text-dim); background:#0e1922; border:1px solid var(--border); border-radius:8px; padding:14px; }
+  .stat-line { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border); }
+  .history-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:8px; background:#0e1922; border:1px solid var(--border); margin-bottom:8px; cursor:pointer; font-family:var(--font-mono); font-size:12px; }
+  .h-code { color:var(--accent); font-weight:700; }
+  .h-url { color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:280px; }
+  .empty-note { color:var(--text-dim); font-size:12px; font-family:var(--font-mono); }
+  .note { font-family:var(--font-mono); font-size:11px; color:var(--text-dim); background:#24384780; border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-top:24px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Claim your short link</h1>
+  <p class="sub"></p>
+
+  <div class="config">
+    <span class="dot" id="statusDot"></span>
+    <input type="text" id="apiBase" value="http://localhost:1000" spellcheck="false">
+    <button class="btn-ghost" onclick="checkHealth()" style="padding:6px 12px;">Check</button>
+  </div>
+
+  <div class="panel">
+    <h2>Shorten a URL</h2>
+    <div class="row">
+      <input type="url" id="longUrlInput" placeholder="https://example.com/a-very-long-path">
+      <button class="btn-primary" id="shortenBtn" onclick="shortenUrl()">Shorten</button>
+    </div>
+    <p class="error-msg" id="shortenError"></p>
+    <div class="ticket-slot" id="ticketSlot">
+      <div class="ticket">
+        <div class="ticket-top">
+          <p class="ticket-label">Short link</p>
+          <div class="ticket-code" id="ticketCode">—</div>
+          <div class="ticket-original" id="ticketOriginal">—</div>
+        </div>
+        <div class="barcode" id="ticketBarcode"></div>
+        <div class="perforation"></div>
+        <div class="ticket-bottom">
+          <button class="tk-copy" onclick="copyShortUrl()">Copy</button>
+          <button class="tk-visit" onclick="visitCurrent()">Visit ↗</button>
+          <button class="tk-stats" onclick="loadStatsFor(currentCode)">Stats</button>
+          <button class="tk-delete" onclick="deleteCurrent()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Look up a code</h2>
+    <div class="row">
+      <input type="text" id="lookupInput" placeholder="e.g. a1b2c3">
+      <button class="btn-ghost" onclick="loadStatsFor()">Stats</button>
+    </div>
+    <p class="error-msg" id="lookupError"></p>
+    <div class="stats-box" id="statsBox"></div>
+  </div>
+
+  <div class="panel">
+    <h2>This session's tickets</h2>
+    <div id="historyList"><p class="empty-note">Nothing shortened yet.</p></div>
+  </div>
+</div>
+
+<script>
+let currentCode = null;
+const history = [];
+
+function apiBase() { return document.getElementById('apiBase').value.replace(/\/$/, ''); }
+
+async function checkHealth() {
+  const dot = document.getElementById('statusDot');
+  try {
+    const res = await fetch(apiBase() + '/');
+    dot.className = 'dot ' + (res.ok ? 'online' : 'offline');
+  } catch { dot.className = 'dot offline'; }
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+}
+
+function renderBarcode(code) {
+  const c = document.getElementById('ticketBarcode'); c.innerHTML = '';
+  for (const ch of code) {
+    const bar = document.createElement('div');
+    bar.style.height = (6 + (ch.charCodeAt(0) % 20)) + 'px';
+    c.appendChild(bar);
+  }
+}
+
+async function shortenUrl() {
+  const input = document.getElementById('longUrlInput');
+  const btn = document.getElementById('shortenBtn');
+  showError('shortenError', '');
+  const originalUrl = input.value.trim();
+  if (!originalUrl) return showError('shortenError', 'Enter a URL first.');
+  try { new URL(originalUrl); } catch { return showError('shortenError', 'Invalid URL — include https://'); }
+
+  btn.disabled = true; btn.textContent = 'Shortening…';
+  try {
+    const res = await fetch(apiBase() + '/shorten', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ originalUrl })
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    showTicket(data.shortUrl, originalUrl);
+    history.unshift({ code: data.shortUrl, original: originalUrl });
+    renderHistory();
+    input.value = '';
+  } catch {
+    showError('shortenError', 'Could not reach the API — check server & CORS.');
+  } finally { btn.disabled = false; btn.textContent = 'Shorten'; }
+}
+
+function showTicket(code, original) {
+  currentCode = code;
+  document.getElementById('ticketCode').textContent = apiBase() + '/shorten/' + code;
+  document.getElementById('ticketOriginal').textContent = original;
+  renderBarcode(code);
+  document.getElementById('ticketSlot').style.display = 'block';
+}
+
+function copyShortUrl() {
+  if (currentCode) navigator.clipboard.writeText(apiBase() + '/shorten/' + currentCode);
+}
+
+async function visitCurrent() {
+  if (!currentCode) return;
+  try {
+    const res = await fetch(apiBase() + '/shorten/' + currentCode);
+    const original = await res.json();
+    window.open(original, '_blank');
+  } catch { alert('Could not resolve that link.'); }
+}
+
+async function deleteCurrent() {
+  if (!currentCode || !confirm('Delete this short link?')) return;
+  const res = await fetch(apiBase() + '/shorten/' + currentCode, { method: 'DELETE' });
+  if (res.status === 204 || res.ok) {
+    document.getElementById('ticketSlot').style.display = 'none';
+    const idx = history.findIndex(h => h.code === currentCode);
+    if (idx > -1) history.splice(idx, 1);
+    renderHistory(); currentCode = null;
+  }
+}
+
+async function loadStatsFor(codeArg) {
+  showError('lookupError', '');
+  const code = codeArg || document.getElementById('lookupInput').value.trim();
+  if (!code) return showError('lookupError', 'Enter a short code first.');
+  const box = document.getElementById('statsBox');
+  try {
+    const res = await fetch(apiBase() + '/shorten/' + code + '/stats');
+    if (res.status === 404) { showError('lookupError', 'No link found.'); box.style.display='none'; return; }
+    const data = await res.json();
+    box.innerHTML = `<div class="stat-line"><span>Original</span><span>${data.originalUrl}</span></div>
+      <div class="stat-line"><span>Code</span><span>${data.shortUrl}</span></div>
+      <div class="stat-line"><span>Clicks</span><span>${data.clicks ?? 0}</span></div>`;
+    box.style.display = 'block';
+  } catch { showError('lookupError', 'Could not reach the API.'); }
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) { list.innerHTML = '<p class="empty-note">Nothing shortened yet.</p>'; return; }
+  list.innerHTML = '';
+  history.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<span class="h-code">/${h.code}</span><span class="h-url">${h.original}</span>`;
+    item.onclick = () => showTicket(h.code, h.original);
+    list.appendChild(item);
+  });
+}
+
+checkHealth();
+</script>
+</body>
+</html>
