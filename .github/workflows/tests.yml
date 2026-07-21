@@ -18,5 +18,5 @@ jobs:
 
       - run: npm ci
       - run: npm test
-      env:
-          MONGO_URI: mongodb://localhost:27017/test
+    env:
+        MONGO_URI: mongodb://localhost:27017/test
