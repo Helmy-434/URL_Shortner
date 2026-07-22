@@ -3,6 +3,8 @@ const app = require('./app'); // Imports your express app
 
 const test = require('node:test');
 const assert = require('node:assert');
+const { after } = require('node:test');
+
 
 test('GET / should return 200 or 404 cleanly', async () => {
     const response = await request(app).get('/shorten/test-code');
