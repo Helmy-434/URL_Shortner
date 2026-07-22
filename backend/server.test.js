@@ -22,3 +22,8 @@ test('POST /shorten creates a short URL for a valid link', async () => {
     assert.strictEqual(response.statusCode, 200);
     assert.ok(response.body.shortUrl);
 });
+
+
+after(async () => {
+    await mongoose.disconnect(); // Close the database connection
+});
