@@ -1,6 +1,13 @@
 const express = require('express');
 const app = express();
 const model = require('./models/Url');
+const connectDB = require('./db');
+const cors = require('cors');
+
+app.use(cors());
+app.use(express.json())
+connectDB();
+
 
 
 app.get('/', (req, res) => {
