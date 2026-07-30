@@ -3,7 +3,7 @@ const app = require('./app'); // Imports your express app
 const mongoose = require('mongoose');
 const assert = require('node:assert');
 const { test, beforeEach, after ,before} = require('node:test');
-const { redisClient } = require('./cache');
+const  redisClient = require('./cache');
 
 
 before(async () => {
