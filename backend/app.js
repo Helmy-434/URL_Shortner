@@ -48,16 +48,35 @@ app.post('/shorten',async (req, res) => {
     }
 });
 
+function code_cache(req, res, next) {
+    const { shortUrl } = req.params;
+    redisClient.get(shortUrl, (err, data) => {
+        if (err) {
+            console.error('Redis error:', err);
+            return res.status(500).json({ error: 'Failed to retrieve cached data' });
+        }
+        else if (data!== null) {
+            console.log('Cache hit');
+            return res.json({ originalUrl: data }); // Return the cached data
+        }
+        else {
+            next();
+        }
+    });
+}
 
-app.get('/shorten/:shortUrl', async (req, res) => {
+
+app.get('/shorten/:shortUrl', code_cache,async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
         const urlEntry = await model.findOne({ shortUrl });
         if (urlEntry) {
             urlEntry.clicks += 1; 
-            await urlEntry.save(); 
-            return res.json(urlEntry.originalUrl);            
+            await urlEntry.save();
+            console.log('Cache miss');
+            redisClient.setex(shortUrl, 3600, urlEntry.originalUrl); // Cache for 1 hour 
+            return res.json(urlEntry.originalUrl);          
         }
         else{
             res.status(404).json({ error: 'Couldn\'t find the original URL' });
@@ -105,7 +124,24 @@ app.delete('/shorten/:shortUrl', async (req, res) => {
 });
 
 
-app.get('/shorten/:shortUrl/stats', async (req, res) => {
+function stats_cache(req, res, next) {
+    const { shortUrl } = req.params;
+    redisClient.get(`stats_${shortUrl}`, (err, data) => {
+        if (err) {
+            console.error('Redis error:', err);
+            return res.status(500).json({ error: 'Failed to retrieve cached data' });
+        }
+        else if (data !== null) {
+            console.log('Cache hit');
+            return res.json({ stats: data });
+        }
+        else {
+            next();
+        }
+    });
+}
+
+app.get('/shorten/:shortUrl/stats', stats_cache,async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
