@@ -21,6 +21,16 @@ jobs:
         ports:
           - 27017:27017
 
+      redis:
+        image: redis:latest
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     defaults:
       run:
         working-directory: backend
@@ -49,3 +59,4 @@ jobs:
         working-directory: backend
     env:
       MONGODB_URI: mongodb://localhost:27017/test   
+      REDIS_URL: redis://localhost:6379
