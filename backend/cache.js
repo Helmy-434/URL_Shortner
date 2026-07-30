@@ -15,4 +15,4 @@ if(redisClient.isOpen === false){
     });
 }
 
-exports.redisClient = redisClient;
+module.exports = redisClient;

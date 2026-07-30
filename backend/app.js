@@ -48,35 +48,36 @@ app.post('/shorten',async (req, res) => {
     }
 });
 
-function code_cache(req, res, next) {
+async function code_cache(req, res, next) {
     const { shortUrl } = req.params;
-    redisClient.get(shortUrl, (err, data) => {
-        if (err) {
-            console.error('Redis error:', err);
-            return res.status(500).json({ error: 'Failed to retrieve cached data' });
-        }
-        else if (data!== null) {
+    try {
+        const data = await redisClient.get(shortUrl);
+        if (data!== null) {
             console.log('Cache hit');
+            model.updateOne({ shortUrl }, { $inc: { clicks: 1 } }).exec();
             return res.json({ originalUrl: data }); // Return the cached data
         }
         else {
             next();
         }
-    });
+    }catch (error) {
+        console.error('Error retrieving cached data:', error);
+        next();
+    }
 }
 
 
-app.get('/shorten/:shortUrl', code_cache,async (req, res) => {
+app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
         const urlEntry = await model.findOne({ shortUrl });
         if (urlEntry) {
             urlEntry.clicks += 1; 
-            await urlEntry.save();
+            urlEntry.save();
             console.log('Cache miss');
-            redisClient.setex(shortUrl, 3600, urlEntry.originalUrl); // Cache for 1 hour 
-            return res.json(urlEntry.originalUrl);          
+            redisClient.set(shortUrl, urlEntry.originalUrl, { EX: 3600 }); // Cache for 1 hour 
+            return res.json({ originalUrl: urlEntry.originalUrl });          
         }
         else{
             res.status(404).json({ error: 'Couldn\'t find the original URL' });
@@ -96,6 +97,8 @@ app.put('/shorten/:shortUrl', async (req, res) => {
         if (test) {
             test.originalUrl = newUrl; // Update the original URL
             await test.save(); // Save the updated document
+            await redisClient.del(shortUrl);
+            await redisClient.del(`${shortUrl}_stats`);
             return res.json({ message: 'URL updated successfully' });
         } else {
             res.status(404).json({ error: 'Short URL not found' });
@@ -113,7 +116,9 @@ app.delete('/shorten/:shortUrl', async (req, res) => {
         const test = await model.findOne({ shortUrl });
         if (test) {
             await model.deleteOne({ shortUrl }); // Delete the document
-            return res.status(204).json();
+            await redisClient.del(shortUrl);
+            await redisClient.del(`${shortUrl}_stats`);
+            return res.status(204).send();
         } else {
             res.status(404).json({ error: 'Short URL not found' });
         }
@@ -124,21 +129,21 @@ app.delete('/shorten/:shortUrl', async (req, res) => {
 });
 
 
-function stats_cache(req, res, next) {
+async function stats_cache(req, res, next) {
     const { shortUrl } = req.params;
-    redisClient.get(`stats_${shortUrl}`, (err, data) => {
-        if (err) {
-            console.error('Redis error:', err);
-            return res.status(500).json({ error: 'Failed to retrieve cached data' });
-        }
-        else if (data !== null) {
-            console.log('Cache hit');
-            return res.json({ stats: data });
-        }
-        else {
-            next();
-        }
-    });
+    try{
+        const data = await redisClient.get(`${shortUrl}_stats`);
+        if (data !== null) {
+        console.log('Cache hit');
+        return res.json( JSON.parse(data));
+    }
+    else {
+        next();
+    }
+    }catch (error) {
+        console.error('Error retrieving cached stats:', error);
+        next();//Fall back to the database
+    }
 }
 
 app.get('/shorten/:shortUrl/stats', stats_cache,async (req, res) => {
@@ -147,6 +152,7 @@ app.get('/shorten/:shortUrl/stats', stats_cache,async (req, res) => {
     try {
         const urlEntry = await model.findOne({ shortUrl });
         if (urlEntry) {
+            await redisClient.set(`${shortUrl}_stats`, JSON.stringify(urlEntry), { EX: 60 });
             return res.json(urlEntry);            
         }
         else{
@@ -157,8 +163,5 @@ app.get('/shorten/:shortUrl/stats', stats_cache,async (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve original URL' });
     }
 });
-
-
-
 
 module.exports = app;
