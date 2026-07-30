@@ -16,7 +16,7 @@ before(async () => {
 });
 
 beforeEach(async () => {
-    if (redisClient.isOpen) {
+    if (redisClient.isReady) {
         await redisClient.flushDb();
     }
 });
