@@ -5,6 +5,16 @@ const assert = require('node:assert');
 const { test, beforeEach, after } = require('node:test');
 const { redisClient } = require('./cache');
 
+
+before(async () => {
+    if (mongoose.connection.readyState !== 1) {
+        await new Promise((resolve) => mongoose.connection.once('open', resolve));
+    }
+    if (!redisClient.isReady) {
+        await new Promise((resolve) => redisClient.once('ready', resolve));
+    }
+});
+
 beforeEach(async () => {
     if (redisClient.isOpen) {
         await redisClient.flushDb();
