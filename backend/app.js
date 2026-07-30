@@ -3,12 +3,11 @@ const app = express();
 const model = require('./models/Url');
 const connectDB = require('./db');
 const cors = require('cors');
+const redisClient = require('./cache');
 
 app.use(cors());
-app.use(express.json())
+app.use(express.json())//middeware to parse JSON request bodies
 connectDB();
-
-
 
 app.get('/', (req, res) => {
     res.send('Server is running');
@@ -22,7 +21,7 @@ app.post('/shorten',async (req, res) => {
         try {
             const shortUrl = Math.random().toString(36).substring(2, 8); // Generate a random short URL
             const newUrl = new model({ originalUrl, shortUrl });
-            return await newUrl.save(); // Save the new document
+            return await newUrl.save();
         } catch (error) {
             if (error.code === 11000) {
                 console.log("Collision detected! Retrying...");
@@ -35,8 +34,8 @@ app.post('/shorten',async (req, res) => {
     try {
         const test = await model.findOne({ originalUrl });
         if (test) {
-            test.clicks += 1; // Increment the click count
-            await test.save(); // Save the updated document
+            test.clicks += 1; 
+            await test.save(); 
             return res.json({ shortUrl: test.shortUrl });
         }
         else{
@@ -56,8 +55,8 @@ app.get('/shorten/:shortUrl', async (req, res) => {
     try {
         const urlEntry = await model.findOne({ shortUrl });
         if (urlEntry) {
-            urlEntry.clicks += 1; // Increment the click count
-            await urlEntry.save(); // Save the updated document
+            urlEntry.clicks += 1; 
+            await urlEntry.save(); 
             return res.json(urlEntry.originalUrl);            
         }
         else{

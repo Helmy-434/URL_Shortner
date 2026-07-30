@@ -1,7 +1,7 @@
 const mongoose = require('mongoose'); // Import the tool
 
 const connectDB = async () => {
-    console.log("Checking MONGODB_URI:", process.env.MONGODB_URI);
+    console.log("Checking MONGODB_URI:");
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log(' MongoDB connected successfully!');
