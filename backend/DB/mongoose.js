@@ -1,4 +1,4 @@
-const mongoose = require('mongoose'); // Import the tool
+const mongoose = require('mongoose');
 
 const connectDB = async () => {
     console.log("Checking MONGODB_URI:");
