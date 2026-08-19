@@ -1,10 +1,13 @@
 const express = require('express');
 const app = express();
-const model = require('./models/Url');
-const connectDB = require('./db');
+const URL_model = require('./models/Url');
+const USER_model = require('./models/User');
+const connectDB = require('./DB/mongoose');
 const cors = require('cors');
-const redisClient = require('./cache');
+const redisClient = require('./DB/cache');
+const bcrypt = require('bcryptjs');
 
+const { createAccessToken, createRefreshToken , authToken, authorize} = require('./auth');
 app.use(cors());
 app.use(express.json())//middeware to parse JSON request bodies
 connectDB();
@@ -13,35 +16,102 @@ app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
-
-app.post('/shorten',async (req, res) => {
-    const { originalUrl } = req.body;
-
-    async function saveNewUrl(originalUrl) {
-        try {
-            const shortUrl = Math.random().toString(36).substring(2, 8); // Generate a random short URL
-            const newUrl = new model({ originalUrl, shortUrl });
-            return await newUrl.save();
-        } catch (error) {
-            if (error.code === 11000) {
-                console.log("Collision detected! Retrying...");
-                return await saveNewUrl(originalUrl); // Recursively try again
-            }
-            throw error;  
-        }
-    }
-
+app.post('/token', async (req, res) => {
     try {
-        const test = await model.findOne({ originalUrl });
-        if (test) {
-            test.clicks += 1; 
-            await test.save(); 
-            return res.json({ shortUrl: test.shortUrl });
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(401).json({ error: 'Refresh token not provided' });
+        }
+        const accessToken = await createAccessToken(refreshToken);
+        return res.json({ accessToken });
+    }catch (error) {
+        console.error('Error creating access token:', error);
+        res.status(500).json({ error: 'Failed to create access token' });
+    }
+});
+
+
+app.post('/register', async (req, res) => {
+    const {email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+    if(password.length < 6){
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await USER_model.create({email, password: hashedPassword})
+    .then(async (newUser) => {
+        const refreshToken = await createRefreshToken(newUser);
+        const accessToken = await createAccessToken(newUser,refreshToken);
+        return res.status(201).json({ message: 'User registered successfully', user: newUser ,accessToken, refreshToken});
+    })
+    .catch((error) => {
+        if (error.code === 11000) { // Duplicate key error
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+        res.status(400).json({ error: 'Invalid credentials' });
+    });
+
+});
+
+
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+    try{
+        const user = await USER_model.findOne({ email });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid email' });
         }
         else{
-            const savedUrl = await saveNewUrl(originalUrl);
-            return res.json({ shortUrl: savedUrl.shortUrl });
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({ error: 'Invalid password' });
+            }
+            else{
+                const refreshToken = await createRefreshToken(user);
+                const accessToken = await createAccessToken(refreshToken);
+                return res.json({ accessToken, refreshToken });
+            }
         }
+    }catch (error) {
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+
+
+async function saveNewUrl(originalUrl,userId) {
+    try {
+        const shortUrl = Math.random().toString(36).substring(2, 8); // Generate a random short URL
+        const newUrl = new URL_model({ originalUrl, shortUrl, userId });
+        return await newUrl.save();
+    } catch (error) {
+        if (error.code === 11000) {
+            console.log("Collision detected! Retrying...");
+            return await saveNewUrl(originalUrl, userId); // Recursively try again
+        }
+        throw error;  
+    }
+}
+
+
+
+app.post('/shorten', authToken,async (req, res) => {
+    const { originalUrl } = req.body;
+    const userId = req.user.userId;
+    try {
+        const existingUrl = await URL_model.findOne({ originalUrl, userId });
+        if (existingUrl) {
+            return res.json({ shortUrl: existingUrl.shortUrl,message: 'You have already shortened this URL' });
+        }
+        const savedUrl = await saveNewUrl(originalUrl,userId);
+        return res.json({ shortUrl: savedUrl.shortUrl });
     }catch (error) {
         console.error('Error shortening URL:', error);
         res.status(500).json({ error: 'Failed to shorten URL' });
@@ -51,10 +121,10 @@ app.post('/shorten',async (req, res) => {
 async function code_cache(req, res, next) {
     const { shortUrl } = req.params;
     try {
-        const data = await redisClient.get(shortUrl);
+        const data = await redisClient.get(`url:${shortUrl}`);
         if (data!== null) {
             console.log('Cache hit');
-            model.updateOne({ shortUrl }, { $inc: { clicks: 1 } }).exec();
+            URL_model.updateOne({ shortUrl }, { $inc: { clicks: 1 } }).exec();
             return res.json({ originalUrl: data }); // Return the cached data
         }
         else {
@@ -71,12 +141,12 @@ app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
-        const urlEntry = await model.findOne({ shortUrl });
+        const urlEntry = await URL_model.findOne({ shortUrl });
         if (urlEntry) {
             urlEntry.clicks += 1; 
-            urlEntry.save();
+            urlEntry.save().catch(err => console.error('Failed to save click count:', err)); // Bec i skipped await here
             console.log('Cache miss');
-            redisClient.set(shortUrl, urlEntry.originalUrl, { EX: 3600 }); // Cache for 1 hour 
+            redisClient.set(`url:${shortUrl}`, urlEntry.originalUrl, { EX: 3600 }); // Cache for 1 hour 
             return res.json({ originalUrl: urlEntry.originalUrl });          
         }
         else{
@@ -89,16 +159,16 @@ app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
 });
 
 
-app.put('/shorten/:shortUrl', async (req, res) => {
+app.put('/shorten/:shortUrl', authToken,authorize,async (req, res) => {
     const { shortUrl } = req.params;
     const { newUrl } = req.body;
     try {
-        const test = await model.findOne({ shortUrl });
+        const test = await URL_model.findOne({ shortUrl });
         if (test) {
             test.originalUrl = newUrl; // Update the original URL
             await test.save(); // Save the updated document
-            await redisClient.del(shortUrl);
-            await redisClient.del(`${shortUrl}_stats`);
+            await redisClient.del(`url:${shortUrl}`);
+            await redisClient.del(`stats:${shortUrl}`);
             return res.json({ message: 'URL updated successfully' });
         } else {
             res.status(404).json({ error: 'Short URL not found' });
@@ -110,14 +180,14 @@ app.put('/shorten/:shortUrl', async (req, res) => {
 });
 
 
-app.delete('/shorten/:shortUrl', async (req, res) => {
+app.delete('/shorten/:shortUrl', authToken,authorize,async (req, res) => {
     const { shortUrl } = req.params;
     try {
-        const test = await model.findOne({ shortUrl });
-        if (test) {
-            await model.deleteOne({ shortUrl }); // Delete the document
-            await redisClient.del(shortUrl);
-            await redisClient.del(`${shortUrl}_stats`);
+        const url = await URL_model.findOne({ shortUrl });
+        if (url) {
+            await URL_model.deleteOne({ shortUrl }); // Delete the document
+            await redisClient.del(`url:${shortUrl}`);
+            await redisClient.del(`stats:${shortUrl}`);
             return res.status(204).send();
         } else {
             res.status(404).json({ error: 'Short URL not found' });
@@ -132,7 +202,7 @@ app.delete('/shorten/:shortUrl', async (req, res) => {
 async function stats_cache(req, res, next) {
     const { shortUrl } = req.params;
     try{
-        const data = await redisClient.get(`${shortUrl}_stats`);
+        const data = await redisClient.get(`stats:${shortUrl}`);
         if (data !== null) {
         console.log('Cache hit');
         return res.json( JSON.parse(data));
@@ -146,13 +216,13 @@ async function stats_cache(req, res, next) {
     }
 }
 
-app.get('/shorten/:shortUrl/stats', stats_cache,async (req, res) => {
+app.get('/shorten/:shortUrl/stats', authToken, authorize,stats_cache,async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
-        const urlEntry = await model.findOne({ shortUrl });
+        const urlEntry = await URL_model.findOne({ shortUrl });
         if (urlEntry) {
-            await redisClient.set(`${shortUrl}_stats`, JSON.stringify(urlEntry), { EX: 60 });
+            await redisClient.set(`stats:${shortUrl}`, JSON.stringify(urlEntry), { EX: 60 });
             return res.json(urlEntry);            
         }
         else{
