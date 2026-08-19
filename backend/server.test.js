@@ -1,9 +1,9 @@
 const request = require('supertest');
 const app = require('./app'); // Imports your express app
-const mongoose = require('mongoose');
+const mongoose = require('./DB/mongoose');
 const assert = require('node:assert');
 const { test, beforeEach, after ,before} = require('node:test');
-const  redisClient = require('./cache');
+const  redisClient = require('./DB/cache');
 
 
 before(async () => {
