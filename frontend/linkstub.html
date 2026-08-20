@@ -2,136 +2,570 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Linkstub — URL Shortener</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linkstub — Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #14202b; --surface: #1d2e3a; --ticket: #f3eee2;
-    --ink: #1d2321; --accent: #e2a33b; --danger: #d9614f;
-    --text: #f3eee2; --text-dim: #8fa3ae; --border: #33495780;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --bg: #0F2436;
+    --bg-alt: #163049;
+    --card: #FBF7EE;
+    --card-warm: #F4EDDB;
+    --ink: #12100C;
+    --stamp: #FF5A3C;
+    --stamp-dark: #D8431F;
+    --gold: #F2B33D;
+    --filed: #2E8F6E;
+    --pencil: #6B6355;
+    --pencil-inv: #A9C2D6;
+    --border: #E2D8BE;
+    --border-strong: #cbbd94;
+    --font-display: 'Special Elite', monospace;
+    --font-body: 'Source Serif 4', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   }
+
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
-  .wrap { max-width:620px; margin:0 auto; padding:48px 20px 80px; }
-  h1 { font-size:32px; margin:0 0 8px; }
-  .sub { color:var(--text-dim); font-size:14px; margin:0 0 28px; }
-  .config { display:flex; align-items:center; gap:10px; background:#24384780; border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:28px; }
-  .config input { flex:1; background:none; border:none; color:var(--text); font-family:var(--font-mono); font-size:13px; outline:none; }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); }
-  .dot.online { background:#6fbf7a; } .dot.offline { background:var(--danger); }
-  .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
-  .panel h2 { font-size:15px; margin:0 0 14px; }
-  .row { display:flex; gap:10px; }
-  input[type=text], input[type=url] { width:100%; background:#0e1922; border:1px solid var(--border); border-radius:8px; padding:12px 14px; color:var(--text); font-family:var(--font-mono); font-size:13px; outline:none; }
-  button { font-weight:600; font-size:13px; border:none; border-radius:8px; padding:12px 18px; cursor:pointer; }
-  .btn-primary { background:var(--accent); color:#1d1305; }
-  .btn-ghost { background:none; color:var(--text-dim); border:1px solid var(--border); }
-  .error-msg { font-family:var(--font-mono); font-size:12px; color:var(--danger); margin-top:10px; display:none; }
-  .ticket-slot { margin-top:18px; display:none; }
-  .ticket { background:var(--ticket); color:var(--ink); border-radius:10px; box-shadow:0 8px 0 #d8d1bf; overflow:hidden; }
-  .ticket-top { padding:18px 20px 14px; }
-  .ticket-label { font-family:var(--font-mono); font-size:10px; text-transform:uppercase; color:#55605c; }
-  .ticket-code { font-family:var(--font-mono); font-weight:700; font-size:20px; word-break:break-all; }
-  .ticket-original { font-family:var(--font-mono); font-size:11px; color:#55605c; margin-top:6px; word-break:break-all; }
-  .barcode { display:flex; align-items:flex-end; gap:2px; height:26px; padding:12px 20px 0; }
-  .barcode div { background:var(--ink); width:2px; }
-  .perforation { height:1px; background:repeating-linear-gradient(to right, #55605c 0 6px, transparent 6px 12px); opacity:.35; margin:0 16px; }
-  .ticket-bottom { padding:12px 20px 18px; display:flex; gap:8px; flex-wrap:wrap; }
-  .ticket-bottom button { font-family:var(--font-mono); font-size:11px; padding:8px 12px; }
-  .tk-copy { background:var(--ink); color:var(--ticket); }
-  .tk-visit { background:#e2a33b33; color:#8a5c14; }
-  .tk-stats { background:#1d232108; color:var(--ink); border:1px solid #1d232133; }
-  .tk-delete { background:#d9614f26; color:#a13c2e; }
-  .stats-box { margin-top:14px; display:none; font-family:var(--font-mono); font-size:12px; color:var(--text-dim); background:#0e1922; border:1px solid var(--border); border-radius:8px; padding:14px; }
-  .stat-line { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border); }
-  .history-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:8px; background:#0e1922; border:1px solid var(--border); margin-bottom:8px; cursor:pointer; font-family:var(--font-mono); font-size:12px; }
-  .h-code { color:var(--accent); font-weight:700; }
-  .h-url { color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:280px; }
-  .empty-note { color:var(--text-dim); font-size:12px; font-family:var(--font-mono); }
-  .note { font-family:var(--font-mono); font-size:11px; color:var(--text-dim); background:#24384780; border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-top:24px; line-height:1.6; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 15% 0%, #1B3A57 0%, transparent 45%),
+      radial-gradient(circle at 85% 100%, #1B3A57 0%, transparent 40%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  .drawer {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px 100px;
+  }
+
+  /* ---------- Header / masthead ---------- */
+  .masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 3px double var(--gold);
+    padding-bottom: 14px;
+    margin-bottom: 6px;
+  }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    margin: 0;
+    color: var(--card);
+    text-shadow: 2px 2px 0 var(--stamp-dark);
+  }
+  .masthead .catno {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--pencil-inv);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .tagline {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--gold);
+    margin: 8px 0 28px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ---------- Session strip ---------- */
+  .session-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg-alt);
+    border: 1px solid #2A4A66;
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .session-strip .who { color: var(--pencil-inv); display: flex; align-items: center; gap: 8px; }
+  .session-strip .who b { color: var(--gold); font-weight: 600; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pencil-inv); flex-shrink: 0; }
+  .dot.online { background: #4FD69C; box-shadow: 0 0 6px #4FD69C; }
+  .dot.offline { background: var(--stamp); box-shadow: 0 0 6px var(--stamp); }
+  .linklike {
+    background: none; border: none; color: var(--gold); font-family: var(--font-mono);
+    font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0;
+  }
+  .linklike:hover { opacity: 0.75; }
+
+  .settings-strip {
+    background: var(--bg-alt);
+    border: 1px solid #2A4A66;
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 22px;
+  }
+  .config-toggle { font-size: 11px; color: var(--gold); cursor: pointer; user-select: none; font-family: var(--font-mono); letter-spacing: 0.3px; }
+  .config-row {
+    display: none;
+    gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #2A4A66;
+    font-family: var(--font-mono); font-size: 12px; align-items: center;
+  }
+  .config-row.open { display: flex; }
+  .config-row input { flex: 1; background: var(--bg); border: 1px solid #2A4A66; border-radius: 2px; padding: 6px 8px; color: var(--pencil-inv); font-family: var(--font-mono); font-size: 12px; }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 24px 22px;
+    margin-bottom: 22px;
+    position: relative;
+    box-shadow: 0 6px 0 var(--stamp-dark), 0 6px 16px rgba(0,0,0,0.35);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 22px; width: 34px; height: 8px;
+    background: var(--gold);
+    border-left: 1px solid var(--border-strong);
+    border-right: 1px solid var(--border-strong);
+    border-radius: 0 0 3px 3px;
+  }
+  .card h2 {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: normal;
+    margin: 0 0 16px;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    color: var(--stamp-dark);
+  }
+  .card h2 .idx { font-family: var(--font-mono); font-size: 10px; color: var(--pencil); }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--pencil); margin-bottom: 5px;
+  }
+  .field input {
+    width: 100%; background: var(--card-warm); border: 1.5px solid var(--border-strong);
+    border-radius: 2px; padding: 10px 12px; color: var(--ink); font-family: var(--font-body);
+    font-size: 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus { border-color: var(--stamp); box-shadow: 0 0 0 3px rgba(255,90,60,0.15); }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .btn {
+    font-family: var(--font-mono); font-weight: 600; font-size: 12.5px; letter-spacing: 0.3px;
+    border: 1.5px solid var(--stamp-dark); border-radius: 2px; padding: 10px 18px; cursor: pointer;
+    background: var(--stamp); color: #fff; transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+    box-shadow: 0 3px 0 var(--stamp-dark);
+  }
+  .btn:hover:not(:disabled) { opacity: 0.92; }
+  .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--stamp-dark); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-outline { background: none; color: var(--stamp-dark); box-shadow: none; }
+  .btn-stamp { background: var(--gold); border-color: #B9852A; color: #3A2405; box-shadow: 0 3px 0 #B9852A; }
+  .btn-stamp:hover:not(:disabled) { opacity: 0.92; }
+  .btn-quiet { background: none; border-color: var(--border-strong); color: var(--pencil); font-weight: 500; box-shadow: none; }
+  .btn:focus-visible, .linklike:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .error-msg {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--stamp);
+    margin-top: 10px; display: none; line-height: 1.5;
+  }
+  .error-msg.show { display: block; }
+  .note-msg {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--filed);
+    margin-top: 10px; display: none; line-height: 1.5;
+  }
+  .note-msg.show { display: block; }
+
+  /* ---------- Auth toggle ---------- */
+  .auth-switch {
+    display: flex; gap: 0; margin-bottom: 18px; border: 1.5px solid var(--stamp-dark);
+    border-radius: 3px; overflow: hidden; width: fit-content;
+  }
+  .auth-switch button {
+    font-family: var(--font-mono); font-size: 11.5px; padding: 8px 16px; border: none;
+    background: var(--card-warm); color: var(--stamp-dark); cursor: pointer; letter-spacing: 0.4px;
+  }
+  .auth-switch button.active { background: var(--stamp); color: #fff; }
+  .auth-switch button + button { border-left: 1.5px solid var(--stamp-dark); }
+
+  /* ---------- Stamp / result ticket ---------- */
+  .stamp-slot { display: none; margin-top: 4px; }
+  .stamp-slot.show { display: block; }
+  .stamp {
+    border: 2px solid var(--stamp-dark);
+    border-radius: 4px;
+    padding: 16px 18px;
+    position: relative;
+    transform: rotate(-0.6deg);
+    background: var(--card-warm);
+    box-shadow: 3px 3px 0 rgba(216,67,31,0.25);
+  }
+  .stamp-label {
+    font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--stamp-dark); margin-bottom: 6px; font-weight: 600;
+  }
+  .stamp-code {
+    font-family: var(--font-display); font-size: 19px; color: var(--stamp-dark);
+    word-break: break-all; letter-spacing: 0.5px;
+  }
+  .stamp-original {
+    font-family: var(--font-mono); font-size: 11px; color: var(--pencil);
+    margin-top: 8px; word-break: break-all;
+  }
+  .stamp-clicks {
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--filed); margin-top: 6px; font-weight: 600;
+  }
+  .stamp-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .stamp-actions button {
+    font-family: var(--font-mono); font-size: 11px; padding: 7px 12px; border-radius: 2px;
+    border: 1.5px solid var(--stamp-dark); background: #fff; color: var(--stamp-dark); cursor: pointer;
+  }
+  .stamp-actions button:hover { background: #FFE8E1; }
+  .stamp-actions button.danger { border-color: var(--stamp-dark); background: var(--stamp); color: #fff; }
+  .stamp-actions button.danger:hover { opacity: 0.85; }
+
+  /* ---------- Stats table ---------- */
+  .stat-line {
+    display: flex; justify-content: space-between; gap: 12px; padding: 7px 0;
+    border-bottom: 1px dashed var(--border); font-family: var(--font-mono); font-size: 12px;
+  }
+  .stat-line:last-child { border-bottom: none; }
+  .stat-line span:first-child { color: var(--pencil); }
+  .stat-line span:last-child { text-align: right; word-break: break-all; max-width: 60%; }
+
+  /* ---------- Catalog / history list ---------- */
+  .catalog-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 14px; border: 1px solid var(--border); border-radius: 3px;
+    margin-bottom: 8px; cursor: pointer; font-family: var(--font-mono); font-size: 12px;
+    background: var(--card-warm); transition: border-color 0.12s, transform 0.12s;
+  }
+  .catalog-item:hover { border-color: var(--stamp); transform: translateX(2px); }
+  .catalog-item .c-code { color: var(--stamp-dark); font-weight: 700; flex-shrink: 0; }
+  .catalog-item .c-url { color: var(--pencil); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .empty-note {
+    color: var(--pencil); font-size: 12.5px; font-family: var(--font-mono);
+    padding: 18px 0; text-align: center; border: 1px dashed var(--border-strong); border-radius: 3px;
+  }
+
+  .locked-note {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--pencil);
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 3px;
+    padding: 12px 14px; line-height: 1.6;
+  }
+
+  .footer-note {
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--pencil-inv);
+    text-align: center; margin-top: 36px; line-height: 1.7; opacity: 0.9;
+  }
+  .footer-note span { color: var(--gold); }
+
+  @media (max-width: 480px) {
+    .field-row { flex-direction: column; }
+    .stat-line span:last-child { max-width: 100%; }
+    .masthead { flex-direction: column; gap: 6px; align-items: flex-start; }
+    .masthead .catno { text-align: left; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Claim your short link</h1>
-  <p class="sub"></p>
+<div class="drawer">
 
-  <div class="config">
-    <span class="dot" id="statusDot"></span>
-    <input type="text" id="apiBase" value="http://localhost:1000" spellcheck="false">
-    <button class="btn-ghost" onclick="checkHealth()" style="padding:6px 12px;">Check</button>
+  <div class="masthead">
+    <h1>LINKSTUB</h1>
+    <div class="catno">CATALOG&nbsp;SYSTEM<br>REC.&nbsp;<span id="recCount">000</span></div>
+  </div>
+  <p class="tagline">// a card index for long URLs, filed under a short code</p>
+
+  <div class="session-strip">
+    <div class="who">
+      <span class="dot" id="apiDot"></span>
+      <span id="sessionText">not signed in</span>
+    </div>
+    <button class="linklike" id="sessionAction" onclick="handleSessionAction()">sign in</button>
   </div>
 
-  <div class="panel">
-    <h2>Shorten a URL</h2>
-    <div class="row">
+  <div class="settings-strip">
+    <div class="config-toggle" onclick="toggleConfig()">⚙ server settings <span id="configArrow">▾</span></div>
+    <div class="config-row" id="configRow">
+      <input type="text" id="apiBase" value="http://localhost:1000" spellcheck="false">
+      <button class="btn btn-quiet" style="padding:6px 12px;" onclick="checkHealth()">ping</button>
+    </div>
+  </div>
+
+  <!-- AUTH CARD -->
+  <div class="card" id="authCard">
+    <h2>Reader's card <span class="idx">§ 01</span></h2>
+    <div class="auth-switch">
+      <button id="tabLogin" class="active" onclick="setAuthMode('login')">Sign in</button>
+      <button id="tabRegister" onclick="setAuthMode('register')">Register</button>
+    </div>
+
+    <div class="field">
+      <label for="authEmail">Email</label>
+      <input type="text" id="authEmail" placeholder="you@example.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="authPassword">Password</label>
+      <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Sign in</button>
+    </div>
+    <p class="error-msg" id="authError"></p>
+    <p class="note-msg" id="authNote"></p>
+  </div>
+
+  <!-- SHORTEN CARD -->
+  <div class="card" id="shortenCard" style="display:none;">
+    <h2>New entry <span class="idx">§ 02</span></h2>
+    <div class="field">
+      <label for="longUrlInput">Long URL</label>
       <input type="url" id="longUrlInput" placeholder="https://example.com/a-very-long-path">
-      <button class="btn-primary" id="shortenBtn" onclick="shortenUrl()">Shorten</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-stamp" id="shortenBtn" onclick="shortenUrl()">File it</button>
     </div>
     <p class="error-msg" id="shortenError"></p>
-    <div class="ticket-slot" id="ticketSlot">
-      <div class="ticket">
-        <div class="ticket-top">
-          <p class="ticket-label">Short link</p>
-          <div class="ticket-code" id="ticketCode">—</div>
-          <div class="ticket-original" id="ticketOriginal">—</div>
+
+    <div class="stamp-slot" id="stampSlot">
+      <div class="stamp">
+        <div class="stamp-label">short code</div>
+        <div class="stamp-code" id="stampCode">—</div>
+        <div class="stamp-original" id="stampOriginal">—</div>
+        <div class="stamp-clicks" id="stampClicks"></div>
+        <div class="stamp-actions">
+          <button onclick="copyShortUrl()">Copy link</button>
+          <button onclick="visitCurrent()">Visit ↗</button>
+          <button onclick="loadStatsFor(currentCode)">Stats</button>
+          <button onclick="startEdit()">Edit</button>
+          <button class="danger" onclick="deleteCurrent()">Delete</button>
         </div>
-        <div class="barcode" id="ticketBarcode"></div>
-        <div class="perforation"></div>
-        <div class="ticket-bottom">
-          <button class="tk-copy" onclick="copyShortUrl()">Copy</button>
-          <button class="tk-visit" onclick="visitCurrent()">Visit ↗</button>
-          <button class="tk-stats" onclick="loadStatsFor(currentCode)">Stats</button>
-          <button class="tk-delete" onclick="deleteCurrent()">Delete</button>
+        <div id="editRow" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--stamp);">
+          <input type="url" id="editUrlInput" placeholder="New destination URL" style="width:100%; font-family:var(--font-mono); font-size:12px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:2px; margin-bottom:8px; background:var(--card);">
+          <div class="stamp-actions" style="margin-top:0;">
+            <button onclick="submitEdit()">Save</button>
+            <button onclick="cancelEdit()">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Look up a code</h2>
-    <div class="row">
-      <input type="text" id="lookupInput" placeholder="e.g. a1b2c3">
-      <button class="btn-ghost" onclick="loadStatsFor()">Stats</button>
+  <!-- LOOKUP CARD -->
+  <div class="card" id="lookupCard" style="display:none;">
+    <h2>Look up a code <span class="idx">§ 03</span></h2>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="lookupInput">Short code</label>
+        <input type="text" id="lookupInput" placeholder="e.g. a1b2c3">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-outline" onclick="loadStatsFor()">Pull stats</button>
     </div>
     <p class="error-msg" id="lookupError"></p>
-    <div class="stats-box" id="statsBox"></div>
+    <div id="statsBox" style="display:none; margin-top:14px;"></div>
   </div>
 
-  <div class="panel">
-    <h2>This session's tickets</h2>
-    <div id="historyList"><p class="empty-note">Nothing shortened yet.</p></div>
+  <!-- HISTORY CARD -->
+  <div class="card" id="historyCardEl" style="display:none;">
+    <h2>This session's filings <span class="idx">§ 04</span></h2>
+    <div id="historyList"><p class="empty-note">Nothing filed yet.</p></div>
   </div>
+
+  <p class="footer-note">Codes resolve at <span id="footerBase">http://localhost:1000</span>/shorten/&lt;code&gt;<br>Access tokens expire after 15 minutes and refresh automatically.</p>
 </div>
 
 <script>
+// ---------- State ----------
+let accessToken = null;
+let refreshToken = null;
 let currentCode = null;
+let currentOriginal = null;
 const history = [];
+let authMode = 'login';
 
 function apiBase() { return document.getElementById('apiBase').value.replace(/\/$/, ''); }
 
+// ---------- Config panel ----------
+function toggleConfig() {
+  const row = document.getElementById('configRow');
+  const arrow = document.getElementById('configArrow');
+  row.classList.toggle('open');
+  arrow.textContent = row.classList.contains('open') ? '▴' : '▾';
+}
+document.getElementById('apiBase').addEventListener('change', () => {
+  document.getElementById('footerBase').textContent = apiBase();
+});
+
+// ---------- Health check ----------
 async function checkHealth() {
-  const dot = document.getElementById('statusDot');
+  const dot = document.getElementById('apiDot');
   try {
     const res = await fetch(apiBase() + '/');
     dot.className = 'dot ' + (res.ok ? 'online' : 'offline');
   } catch { dot.className = 'dot offline'; }
 }
 
-function showError(id, msg) {
-  const el = document.getElementById(id);
-  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+// ---------- Auth mode switch ----------
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+  document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign in' : 'Register';
+  document.getElementById('authPassword').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  showError('authError', ''); showNote('authNote', '');
 }
 
-function renderBarcode(code) {
-  const c = document.getElementById('ticketBarcode'); c.innerHTML = '';
-  for (const ch of code) {
-    const bar = document.createElement('div');
-    bar.style.height = (6 + (ch.charCodeAt(0) % 20)) + 'px';
-    c.appendChild(bar);
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.toggle('show', !!msg);
+}
+function showNote(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.toggle('show', !!msg);
+}
+
+// ---------- Auth submit (login/register) ----------
+async function submitAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  showError('authError', ''); showNote('authNote', '');
+  if (!email || !password) return showError('authError', 'Email and password are both required.');
+  if (authMode === 'register' && password.length < 6) return showError('authError', 'Password must be at least 6 characters.');
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = authMode === 'login' ? 'Signing in…' : 'Registering…';
+
+  try {
+    const endpoint = authMode === 'login' ? '/login' : '/register';
+    const res = await fetch(apiBase() + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError('authError', data.error || 'Something went wrong.');
+      return;
+    }
+
+    // The backend's /register route can return a malformed accessToken
+    // (it passes the user object instead of the refresh token when minting it).
+    // If that happens, fall back to a normal login with the same credentials.
+    if (!data.accessToken || !data.refreshToken) {
+      if (authMode === 'register') {
+        showNote('authNote', 'Registered — signing you in…');
+        const loginRes = await fetch(apiBase() + '/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok || !loginData.accessToken) {
+          showError('authError', 'Registered, but sign-in failed. Try signing in manually.');
+          return;
+        }
+        setSession(loginData.accessToken, loginData.refreshToken, email);
+      } else {
+        showError('authError', 'Server did not return a valid token.');
+        return;
+      }
+    } else {
+      setSession(data.accessToken, data.refreshToken, email);
+    }
+
+    document.getElementById('authPassword').value = '';
+  } catch (err) {
+    showError('authError', 'Could not reach the API — check the server address & CORS.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Sign in' : 'Register';
   }
 }
 
+function setSession(newAccess, newRefresh, email) {
+  accessToken = newAccess;
+  refreshToken = newRefresh;
+  document.getElementById('sessionText').innerHTML = 'signed in as <b>' + escapeHtml(email) + '</b>';
+  document.getElementById('sessionAction').textContent = 'sign out';
+  document.getElementById('authCard').style.display = 'none';
+  document.getElementById('shortenCard').style.display = 'block';
+  document.getElementById('lookupCard').style.display = 'block';
+  document.getElementById('historyCardEl').style.display = 'block';
+  showError('authError', ''); showNote('authNote', '');
+}
+
+function signOut() {
+  accessToken = null; refreshToken = null; currentCode = null; currentOriginal = null;
+  document.getElementById('sessionText').textContent = 'not signed in';
+  document.getElementById('sessionAction').textContent = 'sign in';
+  document.getElementById('authCard').style.display = 'block';
+  document.getElementById('shortenCard').style.display = 'none';
+  document.getElementById('lookupCard').style.display = 'none';
+  document.getElementById('historyCardEl').style.display = 'none';
+  document.getElementById('stampSlot').classList.remove('show');
+}
+
+function handleSessionAction() {
+  if (accessToken) signOut();
+  else document.getElementById('authEmail').focus();
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ---------- Authenticated fetch with auto-refresh on 403 ----------
+async function authFetch(path, options = {}) {
+  options.headers = options.headers || {};
+  if (accessToken) options.headers['Authorization'] = 'Bearer ' + accessToken;
+
+  let res = await fetch(apiBase() + path, options);
+
+  if (res.status === 403 && refreshToken) {
+    // Access token likely expired — mint a new one and retry once.
+    const refreshRes = await fetch(apiBase() + '/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+    if (refreshRes.ok) {
+      const refreshData = await refreshRes.json();
+      if (refreshData.accessToken) {
+        accessToken = refreshData.accessToken;
+        options.headers['Authorization'] = 'Bearer ' + accessToken;
+        res = await fetch(apiBase() + path, options);
+      }
+    } else {
+      signOut();
+      showError('shortenError', 'Session expired — please sign in again.');
+    }
+  }
+  return res;
+}
+
+// ---------- Shorten ----------
 async function shortenUrl() {
   const input = document.getElementById('longUrlInput');
   const btn = document.getElementById('shortenBtn');
@@ -140,29 +574,36 @@ async function shortenUrl() {
   if (!originalUrl) return showError('shortenError', 'Enter a URL first.');
   try { new URL(originalUrl); } catch { return showError('shortenError', 'Invalid URL — include https://'); }
 
-  btn.disabled = true; btn.textContent = 'Shortening…';
+  btn.disabled = true; btn.textContent = 'Filing…';
   try {
-    const res = await fetch(apiBase() + '/shorten', {
+    const res = await authFetch('/shorten', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ originalUrl })
     });
-    if (!res.ok) throw new Error();
     const data = await res.json();
-    showTicket(data.shortUrl, originalUrl);
-    history.unshift({ code: data.shortUrl, original: originalUrl });
-    renderHistory();
+    if (!res.ok) { showError('shortenError', data.error || 'Could not shorten that URL.'); return; }
+
+    showStamp(data.shortUrl, originalUrl, data.message);
+    if (!history.some(h => h.code === data.shortUrl)) {
+      history.unshift({ code: data.shortUrl, original: originalUrl });
+      renderHistory();
+    }
     input.value = '';
   } catch {
     showError('shortenError', 'Could not reach the API — check server & CORS.');
-  } finally { btn.disabled = false; btn.textContent = 'Shorten'; }
+  } finally {
+    btn.disabled = false; btn.textContent = 'File it';
+  }
 }
 
-function showTicket(code, original) {
+function showStamp(code, original, message) {
   currentCode = code;
-  document.getElementById('ticketCode').textContent = apiBase() + '/shorten/' + code;
-  document.getElementById('ticketOriginal').textContent = original;
-  renderBarcode(code);
-  document.getElementById('ticketSlot').style.display = 'block';
+  currentOriginal = original;
+  document.getElementById('stampCode').textContent = apiBase() + '/shorten/' + code;
+  document.getElementById('stampOriginal').textContent = original;
+  document.getElementById('stampClicks').textContent = message ? message : '';
+  document.getElementById('editRow').style.display = 'none';
+  document.getElementById('stampSlot').classList.add('show');
 }
 
 function copyShortUrl() {
@@ -173,52 +614,110 @@ async function visitCurrent() {
   if (!currentCode) return;
   try {
     const res = await fetch(apiBase() + '/shorten/' + currentCode);
-    const original = await res.json();
-    window.open(original, '_blank');
-  } catch { alert('Could not resolve that link.'); }
+    const data = await res.json();
+    if (data.originalUrl) window.open(data.originalUrl, '_blank');
+    else showError('shortenError', 'Could not resolve that link.');
+  } catch { showError('shortenError', 'Could not resolve that link.'); }
 }
 
-async function deleteCurrent() {
-  if (!currentCode || !confirm('Delete this short link?')) return;
-  const res = await fetch(apiBase() + '/shorten/' + currentCode, { method: 'DELETE' });
-  if (res.status === 204 || res.ok) {
-    document.getElementById('ticketSlot').style.display = 'none';
-    const idx = history.findIndex(h => h.code === currentCode);
-    if (idx > -1) history.splice(idx, 1);
-    renderHistory(); currentCode = null;
+function startEdit() {
+  const row = document.getElementById('editRow');
+  row.style.display = row.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('editUrlInput').value = currentOriginal || '';
+}
+function cancelEdit() {
+  document.getElementById('editRow').style.display = 'none';
+}
+async function submitEdit() {
+  const newUrl = document.getElementById('editUrlInput').value.trim();
+  if (!newUrl) return;
+  try { new URL(newUrl); } catch { showError('shortenError', 'Invalid URL — include https://'); return; }
+
+  try {
+    const res = await authFetch('/shorten/' + currentCode, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newUrl })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError('shortenError', data.error || 'Could not update this link.'); return; }
+    currentOriginal = newUrl;
+    document.getElementById('stampOriginal').textContent = newUrl;
+    const h = history.find(x => x.code === currentCode);
+    if (h) h.original = newUrl;
+    renderHistory();
+    cancelEdit();
+  } catch {
+    showError('shortenError', 'Could not reach the API.');
   }
 }
 
+async function deleteCurrent() {
+  if (!currentCode || !confirm('Delete this short link? This cannot be undone.')) return;
+  try {
+    const res = await authFetch('/shorten/' + currentCode, { method: 'DELETE' });
+    if (res.status === 204 || res.ok) {
+      document.getElementById('stampSlot').classList.remove('show');
+      const idx = history.findIndex(h => h.code === currentCode);
+      if (idx > -1) history.splice(idx, 1);
+      renderHistory();
+      currentCode = null; currentOriginal = null;
+    } else {
+      const data = await res.json().catch(() => ({}));
+      showError('shortenError', data.error || 'Could not delete this link.');
+    }
+  } catch {
+    showError('shortenError', 'Could not reach the API.');
+  }
+}
+
+// ---------- Stats lookup ----------
 async function loadStatsFor(codeArg) {
   showError('lookupError', '');
   const code = codeArg || document.getElementById('lookupInput').value.trim();
   if (!code) return showError('lookupError', 'Enter a short code first.');
   const box = document.getElementById('statsBox');
+
   try {
-    const res = await fetch(apiBase() + '/shorten/' + code + '/stats');
-    if (res.status === 404) { showError('lookupError', 'No link found.'); box.style.display='none'; return; }
+    const res = await authFetch('/shorten/' + code + '/stats');
+    if (res.status === 404) { showError('lookupError', 'No link found with that code.'); box.style.display = 'none'; return; }
+    if (res.status === 403) { showError('lookupError', 'You can only view stats for links you own.'); box.style.display = 'none'; return; }
+    if (res.status === 401) { showError('lookupError', 'Please sign in first.'); box.style.display = 'none'; return; }
     const data = await res.json();
-    box.innerHTML = `<div class="stat-line"><span>Original</span><span>${data.originalUrl}</span></div>
-      <div class="stat-line"><span>Code</span><span>${data.shortUrl}</span></div>
-      <div class="stat-line"><span>Clicks</span><span>${data.clicks ?? 0}</span></div>`;
+    if (!res.ok) { showError('lookupError', data.error || 'Could not fetch stats.'); box.style.display = 'none'; return; }
+
+    box.innerHTML =
+      '<div class="stat-line"><span>Original</span><span>' + escapeHtml(data.originalUrl || '—') + '</span></div>' +
+      '<div class="stat-line"><span>Code</span><span>' + escapeHtml(data.shortUrl || code) + '</span></div>' +
+      '<div class="stat-line"><span>Clicks</span><span>' + (data.clicks ?? 0) + '</span></div>' +
+      '<div class="stat-line"><span>Filed</span><span>' + (data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '—') + '</span></div>';
     box.style.display = 'block';
-  } catch { showError('lookupError', 'Could not reach the API.'); }
+  } catch {
+    showError('lookupError', 'Could not reach the API.');
+  }
 }
 
+// ---------- History ----------
 function renderHistory() {
+  document.getElementById('recCount').textContent = String(history.length).padStart(3, '0');
   const list = document.getElementById('historyList');
-  if (history.length === 0) { list.innerHTML = '<p class="empty-note">Nothing shortened yet.</p>'; return; }
+  if (history.length === 0) { list.innerHTML = '<p class="empty-note">Nothing filed yet.</p>'; return; }
   list.innerHTML = '';
   history.forEach(h => {
     const item = document.createElement('div');
-    item.className = 'history-item';
-    item.innerHTML = `<span class="h-code">/${h.code}</span><span class="h-url">${h.original}</span>`;
-    item.onclick = () => showTicket(h.code, h.original);
+    item.className = 'catalog-item';
+    item.innerHTML = '<span class="c-code">/' + escapeHtml(h.code) + '</span><span class="c-url">' + escapeHtml(h.original) + '</span>';
+    item.onclick = () => showStamp(h.code, h.original, '');
     list.appendChild(item);
   });
 }
 
+// Enter-to-submit
+document.getElementById('authPassword').addEventListener('keydown', e => { if (e.key === 'Enter') submitAuth(); });
+document.getElementById('longUrlInput').addEventListener('keydown', e => { if (e.key === 'Enter') shortenUrl(); });
+document.getElementById('lookupInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadStatsFor(); });
+
 checkHealth();
+renderHistory();
 </script>
 </body>
 </html>

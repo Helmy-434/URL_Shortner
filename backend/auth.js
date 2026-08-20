@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 const redisClient = require('./DB/cache');
 const USER_model = require('./models/User');
@@ -28,7 +27,6 @@ async function createAccessToken(refreshToken) {
 function authToken(req, res, next) {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    const user = req.user;
     if (!token) {
         return res.status(401).json({ error: 'Access denied. No token provided.' });
     }

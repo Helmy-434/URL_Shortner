@@ -8,6 +8,9 @@ const redisClient = require('./DB/cache');
 const bcrypt = require('bcryptjs');
 
 const { createAccessToken, createRefreshToken , authToken, authorize} = require('./auth');
+const { UserSchema, UrlSchema,validate ,codeSchema} = require('./validator');
+
+
 app.use(cors());
 app.use(express.json())//middeware to parse JSON request bodies
 connectDB();
@@ -31,37 +34,26 @@ app.post('/token', async (req, res) => {
 });
 
 
-app.post('/register', async (req, res) => {
+app.post('/register', validate(UserSchema), async (req, res) => {
     const {email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-    if(password.length < 6){
-        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-    }
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await USER_model.create({email, password: hashedPassword})
-    .then(async (newUser) => {
+    try {
+        const newUser = await USER_model.create({email, password: hashedPassword});
         const refreshToken = await createRefreshToken(newUser);
-        const accessToken = await createAccessToken(newUser,refreshToken);
+        const accessToken = await createAccessToken(refreshToken);
         return res.status(201).json({ message: 'User registered successfully', user: newUser ,accessToken, refreshToken});
-    })
-    .catch((error) => {
+    }catch(error) {
         if (error.code === 11000) { // Duplicate key error
             return res.status(400).json({ error: 'Username already exists' });
         }
         res.status(400).json({ error: 'Invalid credentials' });
-    });
-
+    }
 });
 
 
-app.post('/login', async (req, res) => {
+app.post('/login',validate(UserSchema), async (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
     try{
         const user = await USER_model.findOne({ email });
         if (!user) {
@@ -84,6 +76,10 @@ app.post('/login', async (req, res) => {
 });
 
 
+app.post('/logout',authToken, async (req, res) => {
+    const user = req.user;
+});
+
 
 
 async function saveNewUrl(originalUrl,userId) {
@@ -102,7 +98,7 @@ async function saveNewUrl(originalUrl,userId) {
 
 
 
-app.post('/shorten', authToken,async (req, res) => {
+app.post('/shorten',validate(UrlSchema), authToken,async (req, res) => {
     const { originalUrl } = req.body;
     const userId = req.user.userId;
     try {
@@ -137,7 +133,7 @@ async function code_cache(req, res, next) {
 }
 
 
-app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
+app.get('/shorten/:shortUrl',validate(codeSchema,'params'),code_cache, async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
@@ -147,7 +143,7 @@ app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
             urlEntry.save().catch(err => console.error('Failed to save click count:', err)); // Bec i skipped await here
             console.log('Cache miss');
             redisClient.set(`url:${shortUrl}`, urlEntry.originalUrl, { EX: 3600 }); // Cache for 1 hour 
-            return res.json({ originalUrl: urlEntry.originalUrl });          
+            return res.redirect(urlEntry.originalUrl);          
         }
         else{
             res.status(404).json({ error: 'Couldn\'t find the original URL' });
@@ -159,7 +155,7 @@ app.get('/shorten/:shortUrl', code_cache, async (req, res) => {
 });
 
 
-app.put('/shorten/:shortUrl', authToken,authorize,async (req, res) => {
+app.put('/shorten/:shortUrl',validate(codeSchema,'params'),validate(UpdateUrlSchema,'body'), authToken,authorize,async (req, res) => {
     const { shortUrl } = req.params;
     const { newUrl } = req.body;
     try {
@@ -180,7 +176,7 @@ app.put('/shorten/:shortUrl', authToken,authorize,async (req, res) => {
 });
 
 
-app.delete('/shorten/:shortUrl', authToken,authorize,async (req, res) => {
+app.delete('/shorten/:shortUrl',validate(codeSchema,'params'), authToken,authorize,async (req, res) => {
     const { shortUrl } = req.params;
     try {
         const url = await URL_model.findOne({ shortUrl });
@@ -216,7 +212,7 @@ async function stats_cache(req, res, next) {
     }
 }
 
-app.get('/shorten/:shortUrl/stats', authToken, authorize,stats_cache,async (req, res) => {
+app.get('/shorten/:shortUrl/stats',validate(codeSchema,'params'), authToken, authorize,stats_cache,async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
