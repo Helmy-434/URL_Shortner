@@ -8,7 +8,7 @@ const redisClient = require('./DB/cache');
 const bcrypt = require('bcryptjs');
 
 const { createAccessToken, createRefreshToken , authToken, authorize} = require('./auth');
-const { UserSchema, UrlSchema,validate ,codeSchema} = require('./validator');
+const { UserSchema, UrlSchema,validate ,codeSchema,UpdateUrlSchema} = require('./validator');
 
 
 app.use(cors());
