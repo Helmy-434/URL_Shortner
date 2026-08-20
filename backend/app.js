@@ -143,7 +143,7 @@ app.get('/shorten/:shortUrl',validate(codeSchema,'params'),code_cache, async (re
             urlEntry.save().catch(err => console.error('Failed to save click count:', err)); // Bec i skipped await here
             console.log('Cache miss');
             redisClient.set(`url:${shortUrl}`, urlEntry.originalUrl, { EX: 3600 }); // Cache for 1 hour 
-            return res.redirect(urlEntry.originalUrl);          
+            return res.json({ originalUrl: urlEntry.originalUrl });          
         }
         else{
             res.status(404).json({ error: 'Couldn\'t find the original URL' });
