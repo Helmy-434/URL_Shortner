@@ -45,11 +45,7 @@ before(async () => {
     refreshToken = registerRes.body.refreshToken;
 });
  
-beforeEach(async () => {
-    if (redisClient.isReady) {
-        await redisClient.flushDb();
-    }
-});
+
  
 // ---------- Auth ----------
  
@@ -183,7 +179,7 @@ test('Full URL Lifecycle: Create -> Cache Miss -> Cache Hit -> Update -> Delete'
  
     // 5. GET /shorten/:code (Verifies cache was purged and new URL is returned)
     const verifyUpdateRes = await request(app).get(`/shorten/${shortUrl}`);
-    assert.strictEqual(verifyUpdateRes.statusCode, 200);
+    assert.strictEqual(verifyUpdateRes.statusCode, 302); // Because the route now redirects to the original URL
     assert.strictEqual(verifyUpdateRes.body.originalUrl, 'https://updated-domain.com');
  
     // 6. DELETE /shorten/:code (Delete, requires auth + ownership -> removes from Redis & DB)
