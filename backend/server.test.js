@@ -162,7 +162,7 @@ test('Full URL Lifecycle: Create -> Cache Miss -> Cache Hit -> Update -> Delete'
  
     // 2. GET /shorten/:code (Cache Miss -> Populates Redis) — public route, no token needed
     const missRes = await request(app).get(`/shorten/${shortUrl}`);
-    assert.strictEqual(missRes.statusCode, 200);
+    assert.strictEqual(missRes.statusCode, 302); // Because the route now redirects to the original URL
     assert.strictEqual(missRes.body.originalUrl, 'https://initial-domain.com');
  
     // 3. GET /shorten/:code (Cache Hit -> Serves from Redis)
