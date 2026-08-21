@@ -39,7 +39,7 @@ function authToken(req, res, next) {
     });
 };
 
-async function authorize(req,res,next){
+async function authorize(req,res,next){  // TODO: check if user exists in DB
     const user = req.user;
     if(!user){
         return res.status(401).json({error: 'Access denied. Login required.'});

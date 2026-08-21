@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "1000:1000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/urlshortener
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+
