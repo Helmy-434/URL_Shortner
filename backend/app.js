@@ -29,6 +29,13 @@ app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', uptime: process.uptime() });
+});
+
+
+
+
 app.post('/token', async (req, res) => {
     try {
         const { refreshToken } = req.body;
@@ -108,7 +115,7 @@ async function saveNewUrl(originalUrl,userId) {
 
 
 
-app.post('/shorten',limiter(),authToken,validate(UrlSchema),async (req, res) => {
+app.post('/shorten',limiter,authToken,validate(UrlSchema),async (req, res) => {
     const { originalUrl } = req.body;
     const userId = req.user.userId;
     try {
