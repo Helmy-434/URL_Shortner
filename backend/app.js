@@ -8,6 +8,7 @@ const redisClient = require('./DB/cache');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { RedisStore } = require('rate-limit-redis');
+
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 100, 
@@ -24,6 +25,9 @@ const { UserSchema, UrlSchema,validate ,codeSchema,UpdateUrlSchema} = require('.
 app.use(cors());
 app.use(express.json())//middeware to parse JSON request bodies
 connectDB();
+
+app.set('trust proxy', 1); // for https purposes with using render 
+
 
 app.get('/', (req, res) => {
     res.send('Server is running');
@@ -94,7 +98,19 @@ app.post('/login',validate(UserSchema), async (req, res) => {
 
 
 app.post('/logout',authToken, async (req, res) => {
-    const user = req.user;
+    const { refreshToken } = req.body; 
+
+    if (!refreshToken) {
+        return res.status(400).json({ error: 'Refresh token required' });
+    }
+
+    try {
+        await redisClient.del(`refreshToken:${refreshToken}`);
+        return res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Error during logout:', error);
+        return res.status(500).json({ error: 'Failed to log out' });
+    }
 });
 
 
