@@ -7,7 +7,7 @@ const cors = require('cors');
 const redisClient = require('./DB/cache');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
-
+const { RedisStore } = require('rate-limit-redis');
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 100, 
