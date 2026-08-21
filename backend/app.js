@@ -6,6 +6,16 @@ const connectDB = require('./DB/mongoose');
 const cors = require('cors');
 const redisClient = require('./DB/cache');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 100, 
+    message: 'Too many requests from this IP, please try again after 10 minutes',
+    store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+});
 
 const { createAccessToken, createRefreshToken , authToken, authorize} = require('./auth');
 const { UserSchema, UrlSchema,validate ,codeSchema,UpdateUrlSchema} = require('./validator');
@@ -98,7 +108,7 @@ async function saveNewUrl(originalUrl,userId) {
 
 
 
-app.post('/shorten',validate(UrlSchema), authToken,async (req, res) => {
+app.post('/shorten',limiter(),authToken,validate(UrlSchema),async (req, res) => {
     const { originalUrl } = req.body;
     const userId = req.user.userId;
     try {
@@ -155,7 +165,7 @@ app.get('/shorten/:shortUrl',validate(codeSchema,'params'),code_cache, async (re
 });
 
 
-app.put('/shorten/:shortUrl',validate(codeSchema,'params'),validate(UpdateUrlSchema,'body'), authToken,authorize,async (req, res) => {
+app.put('/shorten/:shortUrl',authToken,validate(codeSchema,'params'),validate(UpdateUrlSchema,'body'), authorize,async (req, res) => {
     const { shortUrl } = req.params;
     const { newUrl } = req.body;
     try {
@@ -176,7 +186,7 @@ app.put('/shorten/:shortUrl',validate(codeSchema,'params'),validate(UpdateUrlSch
 });
 
 
-app.delete('/shorten/:shortUrl',validate(codeSchema,'params'), authToken,authorize,async (req, res) => {
+app.delete('/shorten/:shortUrl', authToken,validate(codeSchema,'params'), authorize,async (req, res) => {
     const { shortUrl } = req.params;
     try {
         const url = await URL_model.findOne({ shortUrl });
@@ -212,7 +222,7 @@ async function stats_cache(req, res, next) {
     }
 }
 
-app.get('/shorten/:shortUrl/stats',validate(codeSchema,'params'), authToken, authorize,stats_cache,async (req, res) => {
+app.get('/shorten/:shortUrl/stats', authToken,validate(codeSchema,'params'), authorize,stats_cache,async (req, res) => {
     const { shortUrl } = req.params;
 
     try {
