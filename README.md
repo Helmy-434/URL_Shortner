@@ -21,8 +21,8 @@ A Node.js & Express REST API for shortening URLs, with MongoDB persistence, Redi
 
 * **Runtime:** Node.js
 * **Framework:** Express
-* **Database:** MongoDB (Mongoose ODM)
-* **Cache & Rate Limiting:** Redis (tested against Upstash)
+* **Database:** MongoDB (Atlas)
+* **Cache & Rate Limiting:** Redis (Upstash)
 * **Auth:** JSON Web Tokens (`jsonwebtoken`), password hashing via `bcryptjs`
 * **Validation:** Joi
 * **Containerization:** Docker
