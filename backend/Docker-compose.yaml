@@ -2,7 +2,7 @@ services:
   backend:
     build: .
     ports:
-      - "1000:1000"
+      - "8080:8080"
     environment:
       - MONGO_URI=mongodb://mongo:27017/urlshortener
       - REDIS_HOST=redis
