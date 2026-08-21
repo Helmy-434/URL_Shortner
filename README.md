@@ -29,8 +29,26 @@ A fast, containerized Node.js & Express REST API for shortening URLs, featuring 
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── tests.yml
 ├── backend/
-│   ├── src/            # Source code (routes, controllers, models)
-│   ├── Dockerfile      # Container build definition
-│   └── package.json    # Dependencies & scripts
-└── README.md
+│   ├── DB/
+│   │   ├── cache.js
+│   │   └── mongoose.js
+│   │   
+│   ├── models/
+│   │   ├── Url.js
+│   │   └── User.js
+│   ├── .dockerignore
+│   ├── .env
+│   ├── app.js
+│   ├── auth.js
+│   ├── Docker-compose.yaml
+│   ├── Dockerfile
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── server.js
+│   ├── server.test.js
+│   └── validator.js
+└── frontend/
