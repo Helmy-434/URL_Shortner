@@ -5,7 +5,7 @@ services:
       - "8080:8080"
     environment:
       - PORT=8080
-      - MONGO_URI=mongodb://mongo:27017/urlshortener
+      - MONGODB_URI=mongodb://mongo:27017/urlshortener
       - REDIS_URL=redis://redis:6379
       - ACCESS_TOKEN_SECRET=local_dev_secret_123
       - REFRESH_TOKEN_SECRET=local_dev_refresh_secret_123
@@ -16,7 +16,7 @@ services:
 
 
   mongo:
-    image: mongo:latest
+    image: mongo:7
     container_name: local_mongodb
     ports:
       - "27017:27017"
@@ -24,7 +24,7 @@ services:
       - mongo_data:/data/db
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: local_redis
     ports:
       - "6379:6379"
